@@ -68,7 +68,7 @@ int ice40_configure(const unsigned char* bin, unsigned int bin_size) {
 
     // CRESET = LOW
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
-    // Keep CRESET low at least 200 nsec
+    // Keep CRESET low for at least 200 nsec
     HAL_Delay(1);
     // CRESET = HIGH
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
