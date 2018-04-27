@@ -80,6 +80,6 @@ void ssd1306_TestAll() {
     ssd1306_Init();
     ssd1306_TestFPS();
     HAL_Delay(3000);
-//    ssd1306_TestBorder();
+    ssd1306_TestBorder();
     ssd1306_TestFonts();
 }
