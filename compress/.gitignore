@@ -1,5 +1,10 @@
 encode
 decode
+encode2
+decode2
 *.enc
+*.dec
+*.enc2
+*.dec2
 *.log
 *.bin

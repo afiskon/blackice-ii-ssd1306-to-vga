@@ -11,9 +11,12 @@
 
 /*
 Encoding:
-0xxxxxxx - X+1 0x00 bytes
-1yyyyyyy - Y+1 regular bytes following this one
+0xxxxxxx          - X+1   0x00 bytes
+10yyyyyy yyyyyyyy - Y+129 0x00 bytes
+11zzzzzz          - Z+1   regular bytes following this one
 */
+
+#define MAX_ZEROS ((1 << (6+8)) + 129)
 
 int main(int argc, char** argv) {
     if(argc < 3) {
@@ -34,9 +37,9 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    uint8_t regular_buff[128];
+    uint8_t regular_buff[64];
     uint8_t regular_cnt = 0;
-    uint8_t zeros_cnt = 0;
+    uint16_t zeros_cnt = 0;
     uint8_t curr_byte;
 
     for(;;) {
@@ -45,18 +48,21 @@ int main(int argc, char** argv) {
             break;
 
         if(curr_byte == 0x00) {
-            if((zeros_cnt > 0) && (zeros_cnt < 128)) { // encoding zeros
+            if((zeros_cnt > 0) && (zeros_cnt < MAX_ZEROS)) { // encoding zeros
                 zeros_cnt++;
-            } else if(zeros_cnt == 128) { // encoding zeros, but no more bits left
-                zeros_cnt--;
-                write(out, &zeros_cnt, 1); 
+            } else if(zeros_cnt == MAX_ZEROS) { // encoding zeros, but no more bits left
+                zeros_cnt -= 129;
+                uint8_t temp = ((uint8_t)(zeros_cnt >> 8)) | 0x80; // 10yyyyyy part
+                write(out, &temp, 1);
+                temp = zeros_cnt & 0xFF; // yyyyyyyy part
+                write(out, &temp, 1); 
                 zeros_cnt = 1;
             } else { // we were encoding regular bytes, this is the first zero
                 if(regular_cnt) {
                     regular_cnt--;
-                    regular_cnt |= (1 << 7);
+                    regular_cnt |= 0xC0; // 11000000
                     write(out, &regular_cnt, 1);
-                    regular_cnt &= ~(1 << 7);
+                    regular_cnt &= 0x3F; // 00111111
                     write(out, regular_buff, regular_cnt + 1);
                     regular_cnt = 0;
                 }
@@ -65,17 +71,26 @@ int main(int argc, char** argv) {
         } else {
             // were we encoding zeros?
             if(zeros_cnt > 0) {
-                zeros_cnt--;
-                write(out, &zeros_cnt, 1); 
-                zeros_cnt = 0;
+                if(zeros_cnt <= 128) {
+                    zeros_cnt--;
+                    write(out, &zeros_cnt, 1); // 0xxxxxxx code
+                    zeros_cnt = 0;
+                } else {
+                    zeros_cnt -= 129;
+                    uint8_t temp = ((uint8_t)(zeros_cnt >> 8)) | 0x80; // 10yyyyyy part
+                    write(out, &temp, 1);
+                    temp = zeros_cnt & 0xFF; // yyyyyyyy part
+                    write(out, &temp, 1); 
+                    zeros_cnt = 0;
+                }
             }
 
             // check if buffer is full
-            if(regular_cnt == 128) {
+            if(regular_cnt == 64) {
                 regular_cnt--;
-                regular_cnt |= (1 << 7);
+                regular_cnt |= 0xC0; // 11000000
                 write(out, &regular_cnt, 1);
-                write(out, regular_buff, 128);
+                write(out, regular_buff, 64);
                 regular_cnt = 0;
             }
 
@@ -86,13 +101,21 @@ int main(int argc, char** argv) {
 
     if(regular_cnt) {
         regular_cnt--;
-        regular_cnt |= (1 << 7);
+        regular_cnt |= 0xC0; // 11000000
         write(out, &regular_cnt, 1);
-        regular_cnt &= ~(1 << 7);
+        regular_cnt &= 0x3F; // 00111111
         write(out, regular_buff, regular_cnt + 1);
     } else if(zeros_cnt) {
-        zeros_cnt--;
-        write(out, &zeros_cnt, 1); 
+        if(zeros_cnt <= 128) {
+            zeros_cnt--;
+            write(out, &zeros_cnt, 1); // 0xxxxxxx code
+        } else {
+            zeros_cnt -= 129;
+            uint8_t temp = ((uint8_t)(zeros_cnt >> 8)) | 0x80; // 10yyyyyy part
+            write(out, &temp, 1);
+            temp = zeros_cnt & 0xFF; // yyyyyyyy part
+            write(out, &temp, 1); 
+        }
     }
 
     close(in);
