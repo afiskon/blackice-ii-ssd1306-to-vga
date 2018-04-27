@@ -185,7 +185,8 @@ int ice40_configure_compressed(const unsigned char* bin, unsigned int bin_size) 
 
 void loop() {
     ssd1306_TestAll();
-    HAL_Delay(20*1000);
+    // HAL_Delay(20*1000);
+    HAL_Delay(5*1000);
 }
 
 void init() {

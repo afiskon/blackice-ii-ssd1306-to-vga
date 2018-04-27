@@ -88,8 +88,8 @@ parameter v_fp     = 11;  // front porch pulse width
 parameter v_frame  = v_pulse + v_bp + v_pixels + v_fp;
 
 parameter border   = 10;
-parameter h_offset = (h_pixels - (128*4))/2;
-parameter v_offset = (v_pixels - (64*4))/2;
+parameter h_offset = h_pulse + h_bp + ((h_pixels - (128*4))/2);
+parameter v_offset = v_pulse + v_bp + ((v_pixels - (64*4))/2);
 
 logic [addr_width-1:0] h_pos = 0;
 logic [addr_width-1:0] v_pos = 0;
@@ -99,8 +99,8 @@ assign vga_r[3:0] = color;
 assign vga_g[3:0] = color;
 assign vga_b[3:0] = color;
 
-assign vga_hsync = (h_pos < h_pixels + h_fp) ? 0 : 1;
-assign vga_vsync = (v_pos < v_pixels + v_fp) ? 0 : 1;
+assign vga_hsync = (h_pos < h_pulse) ? 0 : 1;
+assign vga_vsync = (v_pos < v_pulse) ? 0 : 1;
 
 always_ff @(posedge clk) begin
     // update current position
@@ -117,12 +117,12 @@ always_ff @(posedge clk) begin
 
     // are we inside centered 512x256 area plus border?
     if((h_pos >= h_offset - border) &&
-       (h_pos < (h_pixels - h_offset + border)) &&
+       (h_pos < (h_offset + (128*4) + border)) &&
        (v_pos >= v_offset - border) &&
-       (v_pos < (v_pixels - v_offset + border)))
+       (v_pos < (v_offset + (64*4) + border)))
     begin
-        if((h_pos >= h_offset) && (h_pos < h_pixels - h_offset) &&
-           (v_pos >= v_offset) && (v_pos < v_pixels - v_offset))
+        if((h_pos >= h_offset) && (h_pos < h_offset + (128*4)) &&
+           (v_pos >= v_offset) && (v_pos < v_offset + (64*4)))
         begin // inside centered area
             if(mem[raddr])
                 color <= 4'b1111;

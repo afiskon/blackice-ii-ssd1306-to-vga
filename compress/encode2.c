@@ -17,7 +17,7 @@ Encoding:
 11zzzzzz          - Z+1   regular bytes following this one
 */
 
-#define MAX_ZEROS ((1 << (6+8)) + 129)
+#define MAX_ZEROS (((1 << (6+8)) - 1) + 129)
 
 int main(int argc, char** argv) {
     if(argc < 3) {
