@@ -105,8 +105,8 @@ assign vga_b[3:0] = color;
 assign vga_hsync = (h_pos < h_pulse) ? 0 : 1;
 assign vga_vsync = (v_pos < v_pulse) ? 0 : 1;
 
-// TODO figure out why MAGIC equals 22!
-// see https://github.com/afiskon/fpga-ssd1306-to-vga/issues/1 discussion
+// Required for consistency between all registers since `<=` is asynchonous.
+// The value 22 was found experimentally. This is a dirty hack, I know :(
 parameter MAGIC = 22; 
 
 always_ff @(posedge clk) begin
