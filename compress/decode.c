@@ -30,20 +30,15 @@ int main(int argc, char** argv) {
 
     uint8_t regular_buff[128];
     uint8_t curr_code;
-    uint64_t offset = 0;
 
     for(;;) {
         ssize_t rd = read(in, &curr_code, 1);
         if(rd != 1) // end of file, probably
             break;
 
-        printf("off = %lu, rd = %ld, curr_code = 0x%02X\n", offset, rd, curr_code);
-        offset += rd;
-
         if(curr_code & (1 << 7)) { // regular bytes
             uint8_t regular_cnt = (curr_code & 0x7F) + 1;
             rd = read(in, regular_buff, regular_cnt);
-            offset += rd;
             if(rd != regular_cnt) {
                 printf("ERROR: rd (%ld) != regular_cnt (%d)\n", rd, regular_cnt);
                 close(in);
@@ -51,13 +46,10 @@ int main(int argc, char** argv) {
                 exit(1);
             }
 
-            printf("  writing %d regular bytes\n", regular_cnt);
-
             write(out, regular_buff, regular_cnt);
         } else { // zeros
             uint8_t zeros_cnt = (curr_code & 0x7F) + 1;
             memset(regular_buff, 0, zeros_cnt);
-            printf("  writing %d zeros\n", zeros_cnt);
             write(out, regular_buff, zeros_cnt);
         }
     }
