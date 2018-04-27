@@ -4,7 +4,10 @@
 
 /* USER CODE BEGIN Includes */
 /* vim: set ai et ts=4 sw=4: */
-#include "ice40_config.h"
+
+// #include "ice40_config_uncompressed.h"
+#include "ice40_config_compressed.h"
+
 #include "ssd1306_tests.h"
 /* USER CODE END Includes */
 
@@ -62,7 +65,7 @@ int spi_write(uint8_t *p, uint32_t len) {
 }
 
 // 0 = OK , < 0 = error
-int ice40_configure(const unsigned char* bin, unsigned int bin_size) {
+int ice40_configure_uncompressed(const unsigned char* bin, unsigned int bin_size) {
     // SS = LOW
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 
@@ -101,10 +104,86 @@ int ice40_configure(const unsigned char* bin, unsigned int bin_size) {
     return 0;
 }
 
-void loop() {
-//    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_15);
-//    HAL_Delay(500);
+// 0 = OK , < 0 = error
+int ice40_configure_compressed(const unsigned char* bin, unsigned int bin_size) {
+    // SS = LOW
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
 
+    // CRESET = LOW
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+    // Keep CRESET low for at least 200 nsec
+    HAL_Delay(1);
+    // CRESET = HIGH
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+    // Give ICE40 at least 800 usec to clear internal configuration memory
+    HAL_Delay(850);
+
+    // check CDONE is LOW
+    if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) != GPIO_PIN_RESET) {
+        return -1;
+    }
+
+    uint32_t offset = 0;
+    uint8_t zero_buff[128] = { 0 };
+    uint8_t curr_code;
+    int res;
+
+    while(offset < bin_size) {
+        curr_code = (uint8_t)(bin[offset++]);
+
+        if((curr_code & (1 << 7)) == 0) { // zeros
+            uint8_t zeros_cnt = (curr_code & 0x7F) + 1;
+            res = spi_write(zero_buff, zeros_cnt);
+            if(res != HAL_OK) {
+                return -2;
+            }
+        } else if((curr_code & 0xC0) == 0x80) { // even more zeros
+            if(offset == bin_size) { // end of data while reading extra code
+                return -3;
+            }
+
+            uint8_t extra_code = (uint8_t)(bin[offset++]);
+            uint16_t zeros_cnt = (((uint16_t)(curr_code & 0x3F)) << 8) | (uint16_t)extra_code;
+            zeros_cnt += 129;
+
+            while(zeros_cnt > 0) {
+                uint8_t nwrite = zeros_cnt > sizeof(zero_buff) ? sizeof(zero_buff) : zeros_cnt;
+                res = spi_write(zero_buff, nwrite);
+                if(res != HAL_OK) {
+                    return -4;
+                }
+                zeros_cnt -= nwrite;
+            }
+        } else { // (curr_code & 0xC0) == 0xC0, regular bytes
+            uint8_t regular_cnt = (curr_code & 0x3F) + 1;
+            if(offset + regular_cnt > bin_size) {
+                return -5;
+            }
+
+            res = spi_write((uint8_t*)(bin + offset), regular_cnt);
+            if(res != HAL_OK) {
+                return -6;
+            }
+            offset += regular_cnt;
+        }
+    }
+
+    // send at least 49 dummy bits
+    unsigned char dummy[7] = {0};
+    res = spi_write(dummy, sizeof(dummy));
+    if(res != HAL_OK) {
+        return -7;
+    }
+
+    // check CDONE is HIGH
+    if(HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_7) != GPIO_PIN_SET) {
+        return -8;
+    }
+
+    return 0;
+}
+
+void loop() {
     ssd1306_TestAll();
     HAL_Delay(20*1000);
 }
@@ -113,7 +192,8 @@ void init() {
     // notify of configuration start
     blink_status_led(2); 
 
-    int code = ice40_configure(main_bin, main_bin_len);
+    // int code = ice40_configure_uncompressed(main_bin, main_bin_len);
+    int code = ice40_configure_compressed(main_bin_enc2, main_bin_enc2_len);
     
     // notify of configuration end (code == 0) or error (code < 0)
     blink_status_led(2 - code); 
