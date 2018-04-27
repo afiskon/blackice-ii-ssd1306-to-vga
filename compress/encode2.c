@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <stdbool.h>
 
 /*
 Encoding:
@@ -30,7 +31,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    int out = open(argv[2], O_WRONLY | O_CREAT, 0660);
+    int out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0660);
     if(out == -1) {
         printf("Failed to open %s: errno = %d\n", argv[2], errno);
         close(in);
@@ -47,7 +48,17 @@ int main(int argc, char** argv) {
         if(rd != 1) // end of file, probably
             break;
 
-        if(curr_byte == 0x00) {
+        bool encode_zero = (curr_byte == 0x00);
+        if(encode_zero && (zeros_cnt == 0)) { // don't encode single 0x00 byte
+            uint8_t next_byte;
+            rd = read(in, &next_byte, 1);
+            encode_zero = (rd == 1) && (next_byte == 0x00);
+            if(rd == 1) { // end of file was not reached yet
+                lseek(in, (off_t)(-1), SEEK_CUR);
+            }
+        }
+
+        if(encode_zero) {
             if((zeros_cnt > 0) && (zeros_cnt < MAX_ZEROS)) { // encoding zeros
                 zeros_cnt++;
             } else if(zeros_cnt == MAX_ZEROS) { // encoding zeros, but no more bits left

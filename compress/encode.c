@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    int out = open(argv[2], O_WRONLY | O_CREAT, 0660);
+    int out = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0660);
     if(out == -1) {
         printf("Failed to open %s: errno = %d\n", argv[2], errno);
         close(in);
