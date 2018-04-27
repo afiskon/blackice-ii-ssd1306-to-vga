@@ -1,0 +1,5 @@
+encode
+decode
+*.enc
+*.log
+*.bin
