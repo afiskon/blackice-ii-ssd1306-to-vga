@@ -19,7 +19,7 @@ void ssd1306_WriteData(uint8_t* buffer, size_t buff_size) {
 #elif defined(SSD1306_USE_SPI)
 
 void ssd1306_Reset(void) {
-    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_SET); // un-select LCD
+    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_SET); // un-select OLED
 	/*
      * Transmit some dummy data with CS = HIGH.
      *
@@ -35,7 +35,7 @@ void ssd1306_Reset(void) {
 	// CS = High (not selected)
 	HAL_GPIO_WritePin(SSD1306_DC_Port, SSD1306_CS_Pin, GPIO_PIN_SET);
 
-	// Reset the LCD
+	// Reset the OLED
 	HAL_GPIO_WritePin(SSD1306_Reset_Port, SSD1306_Reset_Pin, GPIO_PIN_RESET);
 	HAL_Delay(10);
 	HAL_GPIO_WritePin(SSD1306_Reset_Port, SSD1306_Reset_Pin, GPIO_PIN_SET);
@@ -47,19 +47,19 @@ void ssd1306_Reset(void) {
 void ssd1306_WriteCommand(uint8_t byte) {
 	(void)byte;
 /*
-    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_RESET); // select LCD
+    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_RESET); // select OLED
     HAL_GPIO_WritePin(SSD1306_DC_Port, SSD1306_DC_Pin, GPIO_PIN_RESET); // command
     HAL_SPI_Transmit(&SSD1306_SPI_PORT, (uint8_t *) &byte, 1, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_SET); // un-select LCD
+    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_SET); // un-select OLED
 */
 }
 
 // Send data
 void ssd1306_WriteData(uint8_t* buffer, size_t buff_size) {
-    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_RESET); // select LCD
+    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_RESET); // select OLED
 //    HAL_GPIO_WritePin(SSD1306_DC_Port, SSD1306_DC_Pin, GPIO_PIN_SET); // data
     HAL_SPI_Transmit(&SSD1306_SPI_PORT, buffer, buff_size, HAL_MAX_DELAY);
-    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_SET); // un-select LCD
+    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_SET); // un-select OLED
 }
 
 #else
@@ -75,13 +75,13 @@ static SSD1306_t SSD1306;
 
 // Initialize the oled screen
 void ssd1306_Init(void) {
-	// Reset LCD
+	// Reset OLED
 	ssd1306_Reset();
 
     // Wait for the screen to boot
     HAL_Delay(100);
     
-    // Init LCD
+    // Init OLED
     ssd1306_WriteCommand(0xAE); //display off
 
     ssd1306_WriteCommand(0x20); //Set Memory Addressing Mode   
