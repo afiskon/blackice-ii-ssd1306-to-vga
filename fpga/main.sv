@@ -94,9 +94,6 @@ parameter v_offset = v_pulse + v_bp + ((v_pixels - (64*4))/2);
 logic [addr_width-1:0] h_pos = 0;
 logic [addr_width-1:0] v_pos = 0;
 
-logic [addr_width-1:0] x = 0;
-logic [addr_width-1:0] y = 0;
-
 logic [3:0] color = 4'b0000;
 assign vga_r[3:0] = color;
 assign vga_g[3:0] = color;
@@ -105,43 +102,20 @@ assign vga_b[3:0] = color;
 assign vga_hsync = (h_pos < h_pulse) ? 0 : 1;
 assign vga_vsync = (v_pos < v_pulse) ? 0 : 1;
 
-// Required for consistency between all registers since `<=` is asynchonous.
-// The value was found experimentally.
-parameter MAGIC = 22; 
-
 always_ff @(posedge clk) begin
     // update current position
     if(h_pos < h_frame - 1)
     begin
         h_pos <= h_pos + 1;
-        if(h_pos <= (h_offset - MAGIC))
-            x <= 0;
-        else
-            x <= x + 1;
     end
     else
     begin
         h_pos <= 0;
-        x <= 0;
         if(v_pos < v_frame - 1)
-        begin
             v_pos <= v_pos + 1;
-            if(v_pos <= v_offset)
-                y <= 0;
-            else
-                y <= y + 1;
-        end
         else
-        begin
             v_pos <= 0;
-            y <= 0;
-        end
     end
-
-    // addr = (X + (Y / 8) * 128)*8 + (7 - Y % 8)
-    // X = x / 4
-    // Y = y / 4
-    raddr <= ((x / 4) + ((y/4)/8)*128)*8 + (7 - (y/4) & 13'b111);
 
     // are we inside centered 512x256 area plus border?
     if((h_pos >= h_offset - border) &&
@@ -156,6 +130,25 @@ always_ff @(posedge clk) begin
                 color <= 4'b1111;
             else
                 color <= 4'b0000;
+
+            // addr = (X + (Y / 8) * 128)*8 + (7 - Y % 8)
+            // X = (h_pos - h_offset) >> 2
+            // Y = (v_pos - v_offset) >> 2
+            raddr <= (
+                      (
+                       // X
+                       ((h_pos - h_offset) >> 2) |
+                       (
+                          //  Y  div 8
+                          ((((v_pos - v_offset) >> 2) >> 3) & 3'b111)
+                          // mul 128
+                          << 7
+                       )
+                       // mul 8 (size of byte in bits)
+                      ) << 3
+                        // + (7 - (Y % 8))
+                     ) | (7 - (((v_pos - v_offset) >> 2) & 3'b111));
+
         end
         else // outside centered area, draw the border
             color <= 4'b1111;

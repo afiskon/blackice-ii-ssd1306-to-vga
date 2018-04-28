@@ -19,6 +19,18 @@ void ssd1306_WriteData(uint8_t* buffer, size_t buff_size) {
 #elif defined(SSD1306_USE_SPI)
 
 void ssd1306_Reset(void) {
+    HAL_GPIO_WritePin(SSD1306_CS_Port, SSD1306_CS_Pin, GPIO_PIN_SET); // un-select LCD
+	/*
+     * Transmit some dummy data with CS = HIGH.
+     *
+     * This is required to reset `waddr` register on the FPGA side.
+	 * Since FPGA configuration is done using the same SPI bus and includes
+	 * sending a few dummy bytes, these bytes cause shifting of `waddr` when
+     * the configuration starts.
+     */
+    uint8_t dummy[1] = {0xAA};
+    HAL_SPI_Transmit(&SSD1306_SPI_PORT, dummy, sizeof(dummy), HAL_MAX_DELAY);
+
 /*
 	// CS = High (not selected)
 	HAL_GPIO_WritePin(SSD1306_DC_Port, SSD1306_CS_Pin, GPIO_PIN_SET);

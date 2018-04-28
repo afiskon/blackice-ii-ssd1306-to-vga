@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=/home/eax/projects/sandbox/verilog/fpga-blackice-ii-ssd1306-to-vga/stm32/Inc
+HeaderPath=/home/eax/projects/verilog/blackice-ii-ssd1306-to-vga/stm32/Inc
 HeaderFiles=stm32l4xx_it.h;stm32l4xx_hal_conf.h;main.h;
-SourcePath=/home/eax/projects/sandbox/verilog/fpga-blackice-ii-ssd1306-to-vga/stm32/Src
+SourcePath=/home/eax/projects/verilog/blackice-ii-ssd1306-to-vga/stm32/Src
 SourceFiles=stm32l4xx_it.c;stm32l4xx_hal_msp.c;main.c;
 
 [PreviousLibFiles]

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Project>
-<ProjectName>/home/eax/projects/sandbox/verilog/fpga-blackice-ii-ssd1306-to-vga/stm32/\main</ProjectName>
+<ProjectName>/home/eax/projects/verilog/blackice-ii-ssd1306-to-vga/stm32/\main</ProjectName>
 <CMSIS>/home/eax/STM32Cube/Repository/STM32Cube_FW_L4_V1.10.0/Drivers/CMSIS</CMSIS>
 <HAL_Driver>/home/eax/STM32Cube/Repository//STM32Cube_FW_L4_V1.10.0/Drivers/CMSIS</HAL_Driver>
 
